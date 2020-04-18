@@ -1,20 +1,47 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8">
         <title>WebSocket demo</title>
+        <style>
+            body { font: 10px/1.3 -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+        </style>
     </head>
     <body>
+        <button id="check">Проверить статус соединения</button>
         <script>
-            var ws = new WebSocket("ws://127.0.0.1:5678/"),
-                messages = document.createElement('ul');
-            ws.onmessage = function (event) {
-                var messages = document.getElementsByTagName('ul')[0],
-                    message = document.createElement('li'),
-                    content = document.createTextNode(event.data);
-                message.appendChild(content);
-                messages.appendChild(message);
-            };
+            const rs = [
+                `«CONNECTING»: соединение ещё не установлено`,
+                `«OPEN»: обмен данными`,
+                `«CLOSING»: соединение закрывается`,
+                `«CLOSED»: соединение закрыто`
+            ];
+
+            const ws = new WebSocket(`ws://z-gu.ru/websocket`);
+            const btnCheck = document.querySelector('#check');
+            btnCheck.addEventListener(`click`, (e) => console.log(`[check] Состояние сокета: ${rs[ws.readyState]}`));
+
+            const messages = document.createElement(`ul`);
             document.body.appendChild(messages);
+            const wsMessageHandler = (evt) => {
+                console.info(`[message] Данные получены с сервера`);
+                const message = document.createElement(`li`);
+                const content = document.createTextNode(evt.data);
+                message.appendChild(content);
+                messages.prepend(message);
+            }
+            ws.addEventListener(`open`, (e) => console.log(`[open] Соединение установлено`));
+            ws.addEventListener(`message`, wsMessageHandler);
+            ws.addEventListener(`close`, (e) => {
+                // codes: RFC6455, §7.4.1.
+                if (e.wasClean) {
+                    console.log(`[close] Соединение закрыто чисто, код=${e.code} причина=${e.reason}`);
+                } else {
+                    console.warn(`[close] Соединение прервано, код=${e.code} причина=${e.reason}`);
+                }
+            });
+            ws.addEventListener(`error`, (e) => console.error(`[error] Ошибка: ${e.message}`));
         </script>
     </body>
 </html>
+
